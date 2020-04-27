@@ -1025,6 +1025,44 @@ func (s *PolarDBService) ModifyDBSecurityIps(clusterId, ips string) error {
 	return nil
 }
 
+func (s *PolarDBService) DescribeSecurityGroupConfiguration(id string) ([]string, error) {
+	groupIds := make([]string, 0)
+	request := polardb.CreateDescribeDBClusterAccessWhitelistRequest()
+	request.RegionId = s.client.RegionId
+	request.DBClusterId = id
+	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+		return polarDBClient.DescribeDBClusterAccessWhitelist(request)
+	})
+	if err != nil {
+		return groupIds, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	resp, _ := raw.(*polardb.DescribeDBClusterAccessWhitelistResponse)
+
+	for _, v := range resp.DBClusterSecurityGroups.DBClusterSecurityGroup {
+		groupIds = append(groupIds, v.SecurityGroupId)
+	}
+	return groupIds, nil
+}
+
+func (s *PolarDBService) ModifySecurityGroupConfiguration(id string, groupid string) error {
+	request := polardb.CreateModifyDBClusterAccessWhitelistRequest()
+	request.RegionId = s.client.RegionId
+	request.DBClusterId = id
+	//
+	request.WhiteListType = "SecurityGroup"
+	request.SecurityGroupIds = groupid
+	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+		return polarDBClient.ModifyDBClusterAccessWhitelist(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	return nil
+}
+
 func (s *PolarDBService) DescribeBackupPolicy(id string) (policy *polardb.DescribeBackupPolicyResponse, err error) {
 
 	request := polardb.CreateDescribeBackupPolicyRequest()

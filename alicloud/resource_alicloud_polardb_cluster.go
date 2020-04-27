@@ -99,6 +99,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"security_group_ids": {
+				Type:     schema.TypeSet,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+				Optional: true,
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -282,6 +288,15 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("security_ips")
 	}
 
+	if d.HasChange("security_group_ids") {
+		groupIds := strings.Join(expandStringList(d.Get("security_group_ids").(*schema.Set).List())[:], COMMA_SEPARATED)
+		err := polarDBService.ModifySecurityGroupConfiguration(d.Id(), groupIds)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("security_group_ids")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudPolarDBClusterRead(d, meta)
 }
@@ -330,6 +345,12 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 			}
 		}
 	}
+
+	groups, err := polarDBService.DescribeSecurityGroupConfiguration(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("security_group_ids", groups)
 
 	d.Set("vswitch_id", clusterAttribute.VSwitchId)
 	d.Set("pay_type", getChargeType(clusterAttribute.PayType))
