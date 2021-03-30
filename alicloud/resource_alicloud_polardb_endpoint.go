@@ -58,6 +58,12 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"ssl_enabled": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Enable", "Disable", "Update"}, false),
+				Optional:     true,
+				Computed:     true,
+			},
 		},
 	}
 }
